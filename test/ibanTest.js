@@ -5,6 +5,9 @@ if ('undefined' != typeof require) {
 }
 
 describe('IBAN', function(){
+    before(function() {
+      IBAN.setBankCodes(require('./bankCodes.json'));
+    })
 
     describe('.isValid', function(){
 
@@ -37,6 +40,10 @@ describe('IBAN', function(){
 
         it('should return false for an incorrect check digit', function(){
             expect(IBAN.isValid('BE68539007547035')).to.be.false;
+        });
+
+        it('should return false for an incorect bank code', function() {
+            expect(IBAN.isValid('FR8323341010171094522P02862')).to.be.false;
         });
 
         it('should return true for all examples', function(){

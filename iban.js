@@ -128,12 +128,12 @@
      * @param example an example valid IBAN
      * @constructor
      */
-    function Specification(countryCode, length, structure, example){
-
+    function Specification(countryCode, length, structure, example, bankCode){
         this.countryCode = countryCode;
         this.length = length;
         this.structure = structure;
         this.example = example;
+        this.bankCode = bankCode;
     }
 
     /**
@@ -149,11 +149,30 @@
      * @param {String} iban the iban to validate
      * @returns {boolean} true if valid, false otherwise
      */
-    Specification.prototype.isValid = function(iban){
+    Specification.prototype.isValid = function(iban, options){
+        if (this.bankCode && bankCodes) {
+          var bankCode = iban.slice(this.bankCode.start, this.bankCode.start + this.bankCode.length);
+
+          if (!this.checkBankCode(bankCode)) {
+            return false;
+          }
+        }
+
         return this.length == iban.length
             && this.countryCode === iban.slice(0,2)
             && this._regex().test(iban.slice(4))
             && iso7064Mod97_10(iso13616Prepare(iban)) == 1;
+    };
+
+    /**
+     * Check bank code in the list of supported banks
+     * @param  {String} code  the bank code to validate
+     * @return {boolean}      true if valid, false otherwise
+     */
+    Specification.prototype.checkBankCode = function(code) {
+      var country = this.countryCode;
+
+      return bankCodes[country].indexOf(code) !== -1;
     };
 
     /**
@@ -200,6 +219,7 @@
     };
 
     var countries = {};
+    var bankCodes = null;
 
     function addSpecification(IBAN){
         countries[IBAN.countryCode] = IBAN;
@@ -226,7 +246,7 @@
     addSpecification(new Specification("ES", 24, "F04F04F01F01F10",    "ES9121000418450200051332"));
     addSpecification(new Specification("FI", 18, "F06F07F01",          "FI2112345600000785"));
     addSpecification(new Specification("FO", 18, "F04F09F01",          "FO6264600001631634"));
-    addSpecification(new Specification("FR", 27, "F05F05A11F02",       "FR1420041010050500013M02606"));
+    addSpecification(new Specification("FR", 27, "F05F05A11F02",       "FR1420041010050500013M02606", { start: 4, length: 5 }));
     addSpecification(new Specification("GB", 22, "U04F06F08",          "GB29NWBK60161331926819"));
     addSpecification(new Specification("GE", 22, "U02F16",             "GE29NB0000000101904917"));
     addSpecification(new Specification("GI", 23, "U04A15",             "GI75NWBK000000007099453"));
@@ -407,9 +427,15 @@
         return iban.replace(NON_ALPHANUM, '').toUpperCase();
     };
 
+    exports.setBankCodes = function(codes) {
+      bankCodes = codes;
+    };
     /**
      * An object containing all the known IBAN specifications.
      */
     exports.countries = countries;
+    /**
+     * An object containing all the known bank codes
+     */
 
 }));
